@@ -1,82 +1,107 @@
-import { useEffect, useState } from 'react'
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import WorkShowcase from './components/WorkShowcase'
-import Services from './components/Services'
-import Contact from './components/Contact'
-import AdminPanel from './components/AdminPanel'
-import { Settings } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react';
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import WorkShowcase from './components/WorkShowcase';
+import Services from './components/Services';
+import Contact from './components/Contact';
+import AdminPanel from './components/AdminPanel';
+
+const DEFAULT_SPLINE = 'https://prod.spline.design/vc19ejtcC5VJjy5v/scene.splinecode';
 
 const defaultContent = {
-  heroTitle: 'Playful. Interactive. Modern visuals powered by AI.',
-  heroSubtitle: 'I craft brand identities, 3D scenes, and generative visuals that move people. Explore selected work and services below.',
+  siteName: 'Shaith Ibrahim',
+  heroTitle: 'AI Graphics Designer crafting modern visual systems',
+  heroSubtitle: 'I blend generative AI with design direction to create memorable brands, motion, and 3D visuals. Available for collaborations and commissions.',
+  heroBackground: '', // dataURL when user drops an image; otherwise use Spline
   projects: [
     {
-      title: 'Neon Brand Kit',
-      tag: 'Identity',
-      img: 'https://images.unsplash.com/photo-1529336953121-c9e9d8a4b4fd?q=80&w=1200&auto=format&fit=crop',
+      id: 'p1',
+      title: 'Neon Threads – Fashion Campaign',
+      description: 'AI-augmented lookbook with dynamic light trails and volumetric styling.',
+      image: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?q=80&w=1600&auto=format&fit=crop',
     },
     {
-      title: 'Generative Posters',
-      tag: 'Art Direction',
-      img: 'https://images.unsplash.com/photo-1551727974-8af20a3322e1?q=80&w=1200&auto=format&fit=crop',
+      id: 'p2',
+      title: 'Sonic Bloom – Album Art Series',
+      description: 'Procedural botanicals rendered with diffusion priors and color grading.',
+      image: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?q=80&w=1600&auto=format&fit=crop',
     },
     {
-      title: 'Interactive 3D Landing',
-      tag: 'Web 3D',
-      img: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?q=80&w=1200&auto=format&fit=crop',
+      id: 'p3',
+      title: 'Orbital—Product Reveal',
+      description: 'MoGraph teaser with abstract ray-marched forms and glassy materials.',
+      image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1600&auto=format&fit=crop',
     },
   ],
   services: [
-    { title: 'Brand & Identity', desc: 'Logo suites, color systems, type, and guidelines with an AI-first process.' },
-    { title: 'AI Visuals & Prompts', desc: 'Custom prompt libraries, image sets, and pipelines for your brand.' },
-    { title: '3D Landing Experiences', desc: 'Spline-powered, interactive hero scenes that convert and delight.' },
+    { id: 's1', icon: 'design', title: 'Visual Systems', description: 'Identity, typography, palettes, and scalable design languages.' },
+    { id: 's2', icon: 'imagery', title: 'AI Imagery', description: 'Art-direction with diffusion, control nets, and upscaling.' },
+    { id: 's3', icon: 'launch', title: 'Motion & 3D', description: 'Product reveals, hero loops, and showreels with sound.' },
   ],
-}
+};
+
+const STORAGE_KEY = 'portfolio_content';
 
 function App() {
-  const [adminOpen, setAdminOpen] = useState(false)
-  const [content, setContent] = useState(defaultContent)
+  const [content, setContent] = useState(defaultContent);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('portfolio_content')
-      if (saved) setContent(JSON.parse(saved))
-    } catch {}
-  }, [])
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setContent({ ...defaultContent, ...parsed });
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  }, []);
+
+  const saveContent = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+  };
+
+  const heroBackgroundUrl = useMemo(() => {
+    return content.heroBackground || DEFAULT_SPLINE;
+  }, [content.heroBackground]);
+
+  const handleDropReorder = (movedId) => {
+    setContent((prev) => {
+      const idx = prev.projects.findIndex((p) => p.id === movedId);
+      if (idx < 0) return prev;
+      const arr = [...prev.projects];
+      const [moved] = arr.splice(idx, 1);
+      arr.unshift(moved);
+      return { ...prev, projects: arr };
+    });
+  };
+
+  const handleReplaceProjectImage = async (id, file) => {
+    if (!file) return;
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    setContent((prev) => ({
+      ...prev,
+      projects: prev.projects.map((p) => (p.id === id ? { ...p, image: dataUrl } : p)),
+    }));
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-inter">
-      <Navbar />
-      <main>
-        <Hero title={content.heroTitle} subtitle={content.heroSubtitle} />
-        <WorkShowcase projects={content.projects} />
-        <Services services={content.services} />
-        <Contact />
-      </main>
-      <footer className="border-t border-white/10 py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-sm text-neutral-400 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} AIGraphics — AI Graphics Designer</p>
-          <p>Built with Spline, React, and motion.</p>
-        </div>
-      </footer>
+    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+      <Navbar onOpenAdmin={() => setAdminOpen(true)} />
+      <Hero title={content.heroTitle} subtitle={content.heroSubtitle} backgroundUrl={heroBackgroundUrl} />
+      <WorkShowcase projects={content.projects} onDropReorder={handleDropReorder} onReplaceImage={handleReplaceProjectImage} />
+      <Services services={content.services} />
+      <Contact />
 
-      <button
-        onClick={() => setAdminOpen(true)}
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-yellow-400 px-4 py-3 text-sm font-semibold text-neutral-900 shadow-lg hover:bg-yellow-300"
-        aria-label="Open admin panel"
-      >
-        <Settings size={18} /> Edit Site
-      </button>
-
-      <AdminPanel
-        open={adminOpen}
-        onClose={() => setAdminOpen(false)}
-        content={content}
-        onChange={setContent}
-      />
+      <AdminPanel isOpen={adminOpen} onClose={() => setAdminOpen(false)} content={content} setContent={setContent} onSave={saveContent} />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

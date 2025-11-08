@@ -1,34 +1,45 @@
-import { Palette, Sparkles, Rocket } from 'lucide-react'
-import { motion } from 'framer-motion'
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Wand2, Image as ImageIcon, Rocket } from 'lucide-react';
 
-export default function Services({ services }) {
-  const icons = [<Palette key="p" size={18} />, <Sparkles key="s" size={18} />, <Rocket key="r" size={18} />]
+const IconMap = {
+  design: Wand2,
+  imagery: ImageIcon,
+  launch: Rocket,
+};
 
+const ServiceCard = ({ service }) => {
+  const Icon = IconMap[service.icon] || Wand2;
   return (
-    <section id="services" className="py-24 bg-gradient-to-b from-neutral-950 to-neutral-900">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">Services</h2>
-        <p className="text-neutral-400 mt-2 max-w-2xl">I help startups and creators stand out with distinctive, on-brand visuals and interactive moments.</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-100px' }}
+      transition={{ duration: 0.5 }}
+      className="rounded-xl border border-white/10 bg-neutral-900/60 p-5 hover:bg-neutral-900 transition"
+    >
+      <div className="h-10 w-10 rounded bg-yellow-400 text-neutral-900 flex items-center justify-center">
+        <Icon className="h-5 w-5" />
+      </div>
+      <h3 className="mt-3 text-neutral-100 font-semibold">{service.title}</h3>
+      <p className="text-neutral-400 text-sm mt-1">{service.description}</p>
+    </motion.div>
+  );
+};
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((s, i) => (
-            <motion.div
-              key={s.title}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="rounded-2xl border border-white/10 bg-neutral-900 p-6 shadow-sm hover:shadow-yellow-400/10"
-            >
-              <div className="inline-grid h-10 w-10 place-items-center rounded-lg bg-yellow-400 text-neutral-900">
-                {icons[i % icons.length]}
-              </div>
-              <h3 className="mt-4 text-lg font-semibold text-white">{s.title}</h3>
-              <p className="mt-2 text-neutral-300">{s.desc}</p>
-            </motion.div>
+const Services = ({ services }) => {
+  return (
+    <section id="services" className="py-16 bg-neutral-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-neutral-100 mb-8">Services</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {services.map((s) => (
+            <ServiceCard key={s.id} service={s} />
           ))}
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
+
+export default Services;
