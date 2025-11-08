@@ -7,12 +7,13 @@ import Contact from './components/Contact';
 import AdminPanel from './components/AdminPanel';
 
 const DEFAULT_SPLINE = 'https://prod.spline.design/vc19ejtcC5VJjy5v/scene.splinecode';
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 const defaultContent = {
   siteName: 'Shaith Ibrahim',
   heroTitle: 'AI Graphics Designer crafting modern visual systems',
   heroSubtitle: 'I blend generative AI with design direction to create memorable brands, motion, and 3D visuals. Available for collaborations and commissions.',
-  heroBackground: '', // dataURL when user drops an image; otherwise use Spline
+  heroBackground: '',
   projects: [
     {
       id: 'p1',
@@ -46,19 +47,44 @@ function App() {
   const [content, setContent] = useState(defaultContent);
   const [adminOpen, setAdminOpen] = useState(false);
 
+  // Load from backend on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setContent({ ...defaultContent, ...parsed });
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/portfolio`);
+        if (res.ok) {
+          const data = await res.json();
+          // Merge to ensure defaults for any missing fields
+          setContent((prev) => ({ ...prev, ...data }));
+          return;
+        }
+      } catch (e) {
+        // fallback to localStorage if backend not reachable
       }
-    } catch (e) {
-      // ignore parse errors
-    }
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setContent({ ...defaultContent, ...parsed });
+        }
+      } catch {}
+    };
+    load();
   }, []);
 
-  const saveContent = () => {
+  const saveContent = async () => {
+    // Save to backend; also mirror to localStorage for resilience
+    try {
+      const res = await fetch(`${API_BASE}/api/portfolio`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(content),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setContent((prev) => ({ ...prev, ...data }));
+      }
+    } catch {}
     localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
   };
 
@@ -93,7 +119,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      <Navbar onOpenAdmin={() => setAdminOpen(true)} />
+      <Navbar onOpenAdmin={() => setAdminOpen(true)} siteName={content.siteName} />
       <Hero title={content.heroTitle} subtitle={content.heroSubtitle} backgroundUrl={heroBackgroundUrl} />
       <WorkShowcase projects={content.projects} onDropReorder={handleDropReorder} onReplaceImage={handleReplaceProjectImage} />
       <Services services={content.services} />
